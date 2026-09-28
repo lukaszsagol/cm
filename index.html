@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>catalinmonthly.com</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    height: 100%;
+    font-family: Lato, "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 15px;
+    background: #FFFFFF;
+    color: #1D1C1D;
+  }
+  .app-shell {
+    display: flex;
+    height: 100vh;
+    min-height: 560px;
+    border: 1px solid #E0E0E0;
+    overflow: hidden;
+  }
+
+  /* ---------- Sidebar ----------
+     Custom Slack theme: Column BG, Menu BG Active, Active Item, Active Item Text
+     #FBF7EF , #FFD02F , #FF8080 , #FFF9E3
+  */
+  .sidebar {
+    width: 230px;
+    min-width: 230px;
+    background: #FBF7EF;
+    color: #4A463F;
+    display: flex;
+    flex-direction: column;
+    padding: 10px 0 12px;
+    overflow-y: auto;
+  }
+  .workspace-name {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 16px 14px;
+    color: #1D1C1D;
+    font-weight: 900;
+    font-size: 17px;
+    border-bottom: 1px solid rgba(0,0,0,0.08);
+    margin-bottom: 10px;
+  }
+  .workspace-name .chev { opacity: 0.5; font-size: 12px; }
+  .sidebar-section {
+    padding: 12px 16px 4px;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: #9B927E;
+    text-transform: none;
+  }
+  .sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 16px;
+    font-size: 15px;
+    color: #4A463F;
+    white-space: nowrap;
+    border-radius: 6px;
+    margin: 0 6px;
+    width: calc(100% - 12px);
+  }
+  .sidebar-item .hash { opacity: 0.6; width: 12px; text-align: center; }
+  .sidebar-item:hover { background: #E5E0D2; color: #1D1C1D; }
+  .sidebar-item.active { background: #FFD02F; color: #1D1C1D; font-weight: 700; }
+  .sidebar-item.active .hash { opacity: 0.9; }
+  .sidebar-item.unread { color: #1D1C1D; font-weight: 700; }
+  .sidebar-item .badge {
+    margin-left: auto;
+    background: #FF8080;
+    color: #FFF9E3;
+    font-size: 10.5px;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 9px;
+  }
+  .dm-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #2BAC76;
+    display: inline-block;
+    flex-shrink: 0;
+  }
+  .dm-dot.away { background: #7A7A7A; }
+
+  /* ---------- Main pane ---------- */
+  .main-pane {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    background: #fff;
+  }
+  .channel-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 13px 20px;
+    border-bottom: 1px solid #E8E8E8;
+    flex-shrink: 0;
+  }
+  .channel-header .channel-icon { font-size: 16px; }
+  .channel-header .hash { font-size: 18px; font-weight: 900; }
+  .channel-header .name { font-size: 18px; font-weight: 900; }
+  .channel-header .topic { font-size: 13px; color: #616061; }
+  .channel-header .divider { color: #ddd; }
+
+  .messages {
+    flex: 1;
+    overflow-y: auto;
+    padding-bottom: 16px;
+  }
+
+  .day-divider {
+    display: flex;
+    justify-content: center;
+    margin: 16px 20px 10px;
+  }
+  .day-divider span {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: #fff;
+    border: 1px solid #E7E2D2;
+    border-radius: 14px;
+    padding: 4px 14px;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: #514B3A;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  }
+  .day-divider span::after { content: "⌄"; opacity: 0.5; font-weight: 400; }
+
+  .message {
+    position: relative;
+    display: flex;
+    gap: 10px;
+    padding: 6px 20px;
+  }
+  .message:hover { background: #F8F8F8; }
+  .avatar {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+  }
+  .avatar.bot { background: linear-gradient(135deg, #FFD02F, #FFB000); font-size: 18px; }
+  .msg-body { flex: 1; min-width: 0; }
+  .msg-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 2px; }
+  .msg-name { font-weight: 900; font-size: 15px; color: #1D1C1D; }
+  .msg-time { font-size: 12px; color: #616061; }
+  .msg-text {
+    font-size: 15px;
+    line-height: 1.46;
+    color: #1D1C1D;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+  .msg-text b { font-weight: 700; }
+  .msg-text.filler { color: #1D1C1D; }
+
+  .reactions { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  .reaction {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: #F0F4FF; border: 1px solid #D4E1FF; border-radius: 14px;
+    padding: 2px 8px; font-size: 12.5px; color: #1264A3;
+  }
+
+  /* Hover action bar — the easter egg trigger, only on Catalin's message */
+  .msg-actions {
+    position: absolute;
+    top: -14px;
+    right: 20px;
+    background: #fff;
+    border: 1px solid #E0E0E0;
+    border-radius: 8px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    display: flex;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .12s ease;
+  }
+  .message.hoverable:hover .msg-actions { opacity: 1; pointer-events: auto; }
+  .msg-actions button {
+    border: none; background: none; padding: 7px 9px; cursor: pointer;
+    font-size: 15px; border-radius: 6px; color: #616061;
+  }
+  .msg-actions button:hover { background: #F0F0F0; color: #1D1C1D; }
+
+  .peek-note {
+    font-size: 12px;
+    color: #8A8A8A;
+    font-style: italic;
+    margin-top: 6px;
+  }
+
+  footer {
+    padding: 8px 20px 6px;
+    font-size: 11px;
+    color: #B5B5B5;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="workspace-name"><span>Innovation Workspace</span><span class="chev">▾</span></div>
+
+    <div class="sidebar-section">Channels</div>
+    <div class="sidebar-item"><span class="hash">#</span> general</div>
+    <div class="sidebar-item unread"><span class="hash">#</span> announcements</div>
+    <div class="sidebar-item active"><span class="hash">#</span> ams_talks<span class="badge">1</span></div>
+    <div class="sidebar-item"><span class="hash">#</span> berlin_talks</div>
+    <div class="sidebar-item"><span class="hash">#</span> develop</div>
+    <div class="sidebar-item"><span class="hash">#</span> product_news</div>
+
+    <div class="sidebar-section">Direct messages</div>
+    <div class="sidebar-item"><span class="dm-dot"></span> Jordan K.</div>
+    <div class="sidebar-item"><span class="dm-dot"></span> Sam R.</div>
+    <div class="sidebar-item"><span class="dm-dot away"></span> Robin T.</div>
+    <div class="sidebar-item"><span class="dm-dot away"></span> Casey L.</div>
+  </aside>
+
+  <main class="main-pane">
+    <div class="channel-header">
+      <span class="channel-icon">💰</span>
+      <span class="hash">#</span><span class="name">ams_talks</span>
+    </div>
+
+    <div class="messages" id="messages">
+      <div class="day-divider"><span id="dayLabel">Today</span></div>
+      <!-- filler + real message injected by JS -->
+    </div>
+
+    <footer>catalinmonthly.com — a fan-made tribute, not an official workspace</footer>
+  </main>
+</div>
+
+<script>
+// ---------------------------------------------------------------------
+// PAYDAY MODEL
+// Rule derived from 14 historical #ams_talks posts (2023-11 .. 2026-09):
+//   target day = 25th of month, EXCEPT December -> 23rd (pre-holiday payroll)
+//   if target lands on Sat/Sun, roll back to the closest Friday
+//   (also defensively rolls back over a small set of fixed NL holidays)
+// Verified: reproduces all 14 known post dates exactly.
+// ---------------------------------------------------------------------
+
+const NL_FIXED_HOLIDAYS = ["01-01", "04-27", "05-05", "12-25", "12-26"]; // MM-DD, defensive only
+
+function mmdd(d) {
+  return String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+}
+function isWeekend(d) { const w = d.getDay(); return w === 0 || w === 6; }
+function isFixedHoliday(d) { return NL_FIXED_HOLIDAYS.includes(mmdd(d)); }
+
+function paydayForMonth(year, month /* 1-12 */) {
+  const day = month === 12 ? 23 : 25;
+  let d = new Date(year, month - 1, day);
+  while (isWeekend(d) || isFixedHoliday(d)) {
+    d.setDate(d.getDate() - 1);
+  }
+  return d;
+}
+function sameDay(a, b) {
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+}
+function atMidnight(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+function addMonths(year, month, n) {
+  const total = (month - 1) + n;
+  const y = year + Math.floor(total / 12);
+  const m = ((total % 12) + 12) % 12 + 1;
+  return { year: y, month: m };
+}
+
+function computeStatus(refDate) {
+  const today = atMidnight(refDate);
+  const thisPayday = paydayForMonth(today.getFullYear(), today.getMonth() + 1);
+
+  if (sameDay(today, thisPayday)) {
+    return { state: "today", monthDate: today };
+  }
+
+  // If this month's payday hasn't happened yet, the "preview" is for the
+  // current month. If it already went in, we're now waiting for next
+  // month's payday, so the preview should jump ahead to that one.
+  if (today < thisPayday) {
+    return { state: "waiting", previewYear: today.getFullYear(), previewMonth: today.getMonth() + 1 };
+  }
+  const nm = addMonths(today.getFullYear(), today.getMonth() + 1, 1);
+  return { state: "waiting", previewYear: nm.year, previewMonth: nm.month };
+}
+
+// ---------------------------------------------------------------------
+// MESSAGE GENERATORS (same voice as the real posts)
+// ---------------------------------------------------------------------
+
+const EMOJI_MAP = {
+  sunny: "☀️", robot_face: "🤖", newspaper: "📰", sunglasses: "😎", mega: "📣",
+  grin: "😁", large_green_circle: "🟢", no_good: "🙅", white_check_mark: "✅",
+  chart_with_downwards_trend: "📉", nerd_face: "🤓", calendar: "📅", closed: "🔒",
+  "agent-smith": "🕵️", tophat: "🎩", "team-care": "🧡", care: "🤗", joy: "😂",
+  slowday: "🐌", zen: "🧘", bank: "🏦", "evil-": "😈", chocolate_bar: "🍫",
+  memo: "📝", moneybag: "💰", sweat_smile: "😅", hourglass_flowing_sand: "⏳",
+  "pepe-leave": "👋", test_tube: "🧪", cthulhu: "🐙", ringed_planet: "🪐"
+};
+const MONEY_EMOJI = ["💸","💰","🤑","💵","💶","💷","💴","🪙"];
+function money(n) {
+  let s = "";
+  for (let i = 0; i < n; i++) s += MONEY_EMOJI[Math.floor(Math.random() * MONEY_EMOJI.length)] + " ";
+  return s.trim();
+}
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+function monthLabel(d) { return d.toLocaleString("en-US", { month: "long", year: "numeric" }); }
+
+function formatSlackText(raw) {
+  let s = raw.replace(/:([a-zA-Z0-9_+-]+):/g, (m, code) => (EMOJI_MAP[code] !== undefined ? EMOJI_MAP[code] : ""));
+  s = s.replace(/\*([^*\n]+)\*/g, "<b>$1</b>");
+  s = s.replace(/\n/g, "<br>");
+  return s;
+}
+
+const CARE_CLOSERS = [
+  "Take care of each other. :team-care:",
+  "You earned it, human! :robot_face:",
+  "Treat yourself, you've earned it! :care:",
+  "Enjoy it, make it a YOU day. :team-care:",
+  "Whatever you do with it, do it wisely. :nerd_face:",
+  "Go be a little bit extra today. You've earned it."
+];
+const SIGNOFFS = [
+  "Robot, out. :pepe-leave:",
+  ":robot_face: Your helpful feature flag buddy, ready to assist with all things *rollout* and *experimentation*! :test_tube:",
+  "Salutation from the abyss. :cthulhu:",
+  "That's all, humans. Back to your regularly scheduled Jira tickets."
+];
+const SLOW_BANK_JOKES = [
+  "ABN Amro friends, as always, arrive fashionably late. :slowday:",
+  "ING beat ABN to it again — some habits never change. :joy:",
+  "Even Bunq folks already spent it on lunch. Show-offs."
+];
+
+const TODAY_FORMATS = [
+  (month) => `Another beautiful day in Amsterdam :sunny:\nSun's out (or it's raining sideways, who can tell), and — most importantly — we got paid! ${money(3)}\n\n${pick(CARE_CLOSERS)}\n\n${pick(SIGNOFFS)}`,
+  (month) => `Hello humans! :robot_face:\n\nBreaking news! :newspaper:\nWe got paid!! ${money(4)}\n\nWhat a beautiful day. :sunglasses:\n${pick(CARE_CLOSERS)}\n\n${pick(SIGNOFFS)}`,
+  (month) => `Public Service Announcement :mega:\n———\nMoney! ${money(5)}\n———\nSalary day for ${month} is upon us, and it's oh so beautiful. As usual. :grin:\n———\n${pick(CARE_CLOSERS)}\n\n${pick(SIGNOFFS)}`,
+  (month) => `:rocket: RELEASE LOG — ${month.toUpperCase()}\n\n[10:01] Initiating salary rollout...\n[10:02] Payroll release: 5% of accounts... :white_check_mark:\n[10:03] Gradual Rollout to 50%... :white_check_mark:\n[10:04] Expanding to 100%... :white_check_mark:\n[10:05] Rollout complete. No incidents. :large_green_circle:\n\nRollback: not today. :no_good:\n\nGo enjoy ${month.split(" ")[0]}. ${money(2)}\n${pick(CARE_CLOSERS)}`,
+  (month) => `Invoice — Settled :white_check_mark:\n———\nBill To: The Universe :ringed_planet:\nFrom: You\n———\n\nFor services rendered in ${month}:\n • Showing up, even when it was hard :chart_with_downwards_trend:\n • Thinking deeply about messy problems :nerd_face:\n • A full month of your time and energy :calendar:\n\nStatus: PAID ${money(2)}\n———\n\nThis wasn't a gift. It was earned.\nInvoice closed. ${month} unlocked. :closed:`,
+  (month) => `Agents of HQ, :agent-smith:\n\nThe operation ${month} was a success.\nYour reward? Fresh funds just dropped ${money(2)}, now available for tactical deployment. :tophat:\n\nSecure one celebratory coffee. Deliver a compliment to an ally. Infiltrate the snack reserves.\n\nYou earned this. :team-care: :care:\n\n${pick(SIGNOFFS)}`,
+  (month) => `Isn't it an amazing day, when you get paid for ${month}? ${money(14)}\n\n${pick(SLOW_BANK_JOKES)}\n\n${pick(CARE_CLOSERS)}`
+];
+
+const WAITING_TEMPLATES = [
+  () => `Humans :robot_face:, I know why you're here. You're refreshing this channel hoping the money fairy moved things up. She didn't.\n\nNot yet. Go be productive, or at least convincingly pretend to. :nerd_face:`,
+  () => `Patience, human. :zen:\nThe rollout hasn't started yet.\nEven ABN Amro can't make it arrive faster than that. :bank:`,
+  () => `Public Service Announcement :mega:\n———\nNothing to see here yet.\n———\nStill waiting.\n———\nGo do something else with your life in the meantime. :grin:`,
+  () => `Status: PENDING :hourglass_flowing_sand:\nCurrent progress: 0% of accounts.\n\nPlease hold. :evil-:`,
+  () => `Agents :agent-smith:, stand down.\nThe operation isn't live yet.\nUntil then: conserve resources, ration snacks. :chocolate_bar:`,
+  () => `Invoice status: DRAFT :memo:\nNot due yet.\nPlease do not spend hypothetical money. :moneybag: (yet)`,
+  () => `I checked with the bankers. They said "not yet." :sweat_smile:\nAsk me again some other time.`,
+  () => `Breaking news: absolutely nothing has changed since yesterday. :newspaper:\nStill waiting. Slow news day.`
+];
+
+const TODAY_REACTIONS = [
+  { emoji: "💸", min: 6, max: 24 }, { emoji: "🧡", min: 3, max: 15 }, { emoji: "🎉", min: 2, max: 12 }
+];
+const WAITING_REACTIONS = [
+  { emoji: "😅", min: 1, max: 8 }, { emoji: "⏳", min: 1, max: 6 }
+];
+
+// currentReactions is the live, mutable list of {emoji, count} pills shown
+// under the message. Quick-react clicks mutate it in place.
+let currentReactions = [];
+
+function randomReactions(pool) {
+  const count = 2 + Math.floor(Math.random() * (pool.length - 1));
+  const chosen = [...pool].sort(() => Math.random() - 0.5).slice(0, count);
+  return chosen.map(r => ({ emoji: r.emoji, count: r.min + Math.floor(Math.random() * (r.max - r.min)) }));
+}
+
+function renderReactionsRow() {
+  const el = document.getElementById("reactions");
+  if (!el) return;
+  el.innerHTML = currentReactions.map(r => `<span class="reaction">${r.emoji} ${r.count}</span>`).join("");
+}
+
+function addReaction(emoji) {
+  const existing = currentReactions.find(r => r.emoji === emoji);
+  if (existing) existing.count += 1;
+  else currentReactions.push({ emoji, count: 1 });
+  renderReactionsRow();
+}
+
+// Quick-react emoji shown in the hover bar. 👀 is excluded on purpose —
+// it's reserved for the peek easter egg, not a real reaction.
+const QUICK_EMOJIS = ["💸", "🧡", "😅"];
+
+let isToday = false;
+let waitingRaw = "";
+let todayRaw = "";
+let isPeeking = false;
+
+function render() {
+  const now = new Date();
+  const status = computeStatus(now);
+  const timeLabel = now.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+  document.getElementById("dayLabel").textContent = now.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+
+  isToday = status.state === "today";
+  isPeeking = false;
+
+  const quickReactButtons = QUICK_EMOJIS.map(e =>
+    `<button class="quick-react" data-emoji="${e}" title="React with ${e}">${e}</button>`
+  ).join("");
+
+  let actionsHtml;
+  if (isToday) {
+    todayRaw = pick(TODAY_FORMATS)(monthLabel(status.monthDate));
+    currentReactions = randomReactions(TODAY_REACTIONS);
+    actionsHtml = quickReactButtons;
+  } else {
+    waitingRaw = pick(WAITING_TEMPLATES)();
+    // Preview the upcoming payday: this month's if it hasn't happened yet,
+    // otherwise next month's (since this month's has already gone in).
+    const previewDate = new Date(status.previewYear, status.previewMonth - 1, 1);
+    todayRaw = pick(TODAY_FORMATS)(monthLabel(previewDate));
+    currentReactions = randomReactions(WAITING_REACTIONS);
+    // The easter egg: a near-invisible peek icon that reveals what that
+    // message *would* look like, if it were the right day. It never adds
+    // a reaction of its own.
+    actionsHtml = quickReactButtons + `<button id="peekBtn" title="???">👀</button>`;
+  }
+
+  const catalinHtml = `
+    <div class="message hoverable" id="catalinMessage">
+      <div class="avatar bot">🤖</div>
+      <div class="msg-body">
+        <div class="msg-head"><span class="msg-name">Catalin</span><span class="msg-time">${timeLabel}</span></div>
+        <div class="msg-text" id="msgText">${formatSlackText(isToday ? todayRaw : waitingRaw)}</div>
+        <div class="peek-note" id="peekNote" style="display:none;"></div>
+        <div class="reactions" id="reactions"></div>
+      </div>
+      <div class="msg-actions">${actionsHtml}</div>
+    </div>
+  `;
+
+  document.getElementById("messages").innerHTML =
+    `<div class="day-divider"><span>${document.getElementById("dayLabel").textContent}</span></div>` +
+    catalinHtml;
+
+  renderReactionsRow();
+
+  document.querySelectorAll(".quick-react").forEach(btn => {
+    btn.addEventListener("click", () => addReaction(btn.dataset.emoji));
+  });
+  const peekBtn = document.getElementById("peekBtn");
+  if (peekBtn) peekBtn.addEventListener("click", togglePeek);
+}
+
+// ---------------------------------------------------------------------
+// EASTER EGG: peek at the message that would post if today were payday
+// (does not touch the reactions row — it's not a reaction)
+// ---------------------------------------------------------------------
+function togglePeek() {
+  if (isToday) return;
+  isPeeking = !isPeeking;
+  const msgTextEl = document.getElementById("msgText");
+  const peekNoteEl = document.getElementById("peekNote");
+  const btn = document.getElementById("peekBtn");
+
+  if (isPeeking) {
+    msgTextEl.innerHTML = formatSlackText(todayRaw);
+    peekNoteEl.style.display = "block";
+    peekNoteEl.textContent = "psst — sneak peek: this is what today's message would look like, if it were payday";
+    btn.textContent = "🙈";
+    btn.title = "back to reality";
+  } else {
+    msgTextEl.innerHTML = formatSlackText(waitingRaw);
+    peekNoteEl.style.display = "none";
+    btn.textContent = "👀";
+    btn.title = "???";
+  }
+}
+
+render();
+</script>
+</body>
+</html>
